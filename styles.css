@@ -6,12 +6,12 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #f0f0f0;
+    background-color: #0058C9;
     overflow: hidden;
 }
 
 #gameCanvas {
-    border: 1px solid #000;
+    border: 10px solid white;
 }
 
 #tutorial {

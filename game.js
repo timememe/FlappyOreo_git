@@ -16,8 +16,8 @@ background.src = 'assets/BG.png';
 let bgX = 0;
 
 const GAME_SPEED = 2;
-const MIN_PIPE_HEIGHT = 110;
-const MAX_PIPE_HEIGHT = 120;
+const MIN_PIPE_HEIGHT = 150;
+const MAX_PIPE_HEIGHT = 160;
 
 function resize() {
     width = window.innerWidth;
@@ -35,7 +35,7 @@ class Bird {
         this.velocity = 0;
         this.gravity = 0.25;
         this.lift = -5;
-        this.size = 60;
+        this.size = 45;
         this.image1 = new Image();
         this.image1.src = 'assets/bird1.png';
         this.image2 = new Image();
@@ -73,9 +73,9 @@ class Bird {
 class Pipe {
     constructor() {
         this.top = Math.random() * (MAX_PIPE_HEIGHT - MIN_PIPE_HEIGHT) + MIN_PIPE_HEIGHT;
-        this.bottom = 550 - this.top - 150;
+        this.bottom = 600 - this.top - 150;
         this.x = 400;
-        this.width = 100;
+        this.width = 50;
         this.speed = GAME_SPEED;
         this.topTexture = new Image();
         this.bottomTexture = new Image();
@@ -88,27 +88,34 @@ class Pipe {
     }
 
     draw() {
-        const topTextureHeight = this.topTexture.height || this.top;
-        const bottomTextureHeight = this.bottomTexture.height || this.bottom;
-        
-        // Draw top pipe
-        let topY = 0;
-        while (topY < this.top) {
-            const drawHeight = Math.min(topTextureHeight, this.top - topY);
-            ctx.drawImage(this.topTexture, 
-                0, topTextureHeight - drawHeight, this.width, drawHeight,
-                this.x, topY, this.width, drawHeight);
-            topY += drawHeight;
+        // Отрисовка верхней трубы
+        const topAspectRatio = this.topTexture.width / this.topTexture.height;
+        const topTextureHeight = this.width / topAspectRatio;
+        const topRepeat = Math.ceil(this.top / topTextureHeight);
+
+        for (let i = 0; i < topRepeat; i++) {
+            const drawHeight = Math.min(topTextureHeight, this.top - i * topTextureHeight);
+            ctx.drawImage(
+                this.topTexture,
+                0, this.topTexture.height - (drawHeight / topTextureHeight) * this.topTexture.height,
+                this.topTexture.width, (drawHeight / topTextureHeight) * this.topTexture.height,
+                this.x, i * topTextureHeight, this.width, drawHeight
+            );
         }
-        
-        // Draw bottom pipe
-        let bottomY = 600 - this.bottom;
-        while (bottomY < 600) {
-            const drawHeight = Math.min(bottomTextureHeight, 600 - bottomY);
-            ctx.drawImage(this.bottomTexture,
-                0, 0, this.width, drawHeight,
-                this.x, bottomY, this.width, drawHeight);
-            bottomY += drawHeight;
+
+        // Отрисовка нижней трубы
+        const bottomAspectRatio = this.bottomTexture.width / this.bottomTexture.height;
+        const bottomTextureHeight = this.width / bottomAspectRatio;
+        const bottomRepeat = Math.ceil(this.bottom / bottomTextureHeight);
+
+        for (let i = 0; i < bottomRepeat; i++) {
+            const drawHeight = Math.min(bottomTextureHeight, this.bottom - i * bottomTextureHeight);
+            ctx.drawImage(
+                this.bottomTexture,
+                0, 0,
+                this.bottomTexture.width, (drawHeight / bottomTextureHeight) * this.bottomTexture.height,
+                this.x, 600 - this.bottom + i * bottomTextureHeight, this.width, drawHeight
+            );
         }
     }
 }
