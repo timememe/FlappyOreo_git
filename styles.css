@@ -1,4 +1,3 @@
-/* styles.css */
 body {
     margin: 0;
     padding: 0;
@@ -11,7 +10,7 @@ body {
 }
 
 #gameCanvas {
-    border: 10px solid white;
+    border: 1px solid #000;
 }
 
 #tutorial {
@@ -26,4 +25,48 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
+}
+
+#gameOverPopup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #0058C9;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    z-index: 10;
+}
+
+#gameOverPopup.hidden {
+    display: none;
+}
+
+#logo {
+    width: 100px;
+    margin-bottom: 10px;
+}
+
+#buttonContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    background-color: white;
+    color: #0058C9;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.blur {
+    filter: blur(5px);
 }

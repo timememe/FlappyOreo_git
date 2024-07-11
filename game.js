@@ -2,22 +2,57 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const tutorial = document.getElementById('tutorial');
+const gameOverPopup = document.getElementById('gameOverPopup');
+const currentScoreElement = document.getElementById('currentScore');
+const bestScoreElement = document.getElementById('bestScore');
+const restartButton = document.getElementById('restartButton');
+const exitButton = document.getElementById('exitButton');
 
 let width, height, scale;
-let bird, pipes, score;
+let bird, pipes, score, bestScore = 0;
 let gameStarted = false;
 let frames = 0;
 
-const wallTextures = ['wall1', 'wall2', 'wall3', 'wall4', 'wall5', 'wall6', 'wall7'];
-const cupTextures = ['cup1', 'cup2', 'cup3', 'cup4', 'cup5', 'cup6', 'cup7', 'cup8',];
-
-const background = new Image();
-background.src = 'assets/BG.png';
-let bgX = 0;
-
 const GAME_SPEED = 2;
-const MIN_PIPE_HEIGHT = 150;
-const MAX_PIPE_HEIGHT = 160;
+const MIN_PIPE_HEIGHT = 110;
+const MAX_PIPE_HEIGHT = 120;
+
+// Кеш для изображений
+const imageCache = {};
+
+// Функция для загрузки изображения в кеш
+function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            imageCache[src] = img;
+            resolve(img);
+        };
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+// Загрузка всех изображений
+const imageSources = [
+    'assets/bird1.png', 'assets/bird2.png',
+    'assets/wall1.png', 'assets/wall2.png', 'assets/wall3.png',
+    'assets/cup1.png', 'assets/cup2.png', 'assets/cup3.png',
+    'assets/BG.png', 'assets/BG.png', 'assets/logo.png'
+];
+
+let background, backgroundWall;
+let bgX = 0;
+let bgWallX = 0;
+
+Promise.all(imageSources.map(loadImage)).then(() => {
+    background = imageCache['assets/BG.png'];
+    backgroundWall = imageCache['assets/BG.png'];
+    init();
+    gameLoop();
+}).catch(error => {
+    console.error("Failed to load images:", error);
+});
 
 function resize() {
     width = window.innerWidth;
@@ -36,10 +71,8 @@ class Bird {
         this.gravity = 0.25;
         this.lift = -5;
         this.size = 45;
-        this.image1 = new Image();
-        this.image1.src = 'assets/bird1.png';
-        this.image2 = new Image();
-        this.image2.src = 'assets/bird2.png';
+        this.image1 = imageCache['assets/bird1.png'];
+        this.image2 = imageCache['assets/bird2.png'];
         this.currentImage = this.image1;
     }
 
@@ -77,10 +110,8 @@ class Pipe {
         this.x = 400;
         this.width = 50;
         this.speed = GAME_SPEED;
-        this.topTexture = new Image();
-        this.bottomTexture = new Image();
-        this.topTexture.src = `assets/${wallTextures[Math.floor(Math.random() * wallTextures.length)]}.png`;
-        this.bottomTexture.src = `assets/${cupTextures[Math.floor(Math.random() * cupTextures.length)]}.png`;
+        this.topTexture = imageCache[`assets/wall${Math.floor(Math.random() * 3) + 1}.png`];
+        this.bottomTexture = imageCache[`assets/cup${Math.floor(Math.random() * 3) + 1}.png`];
     }
 
     update() {
@@ -99,7 +130,7 @@ class Pipe {
                 this.topTexture,
                 0, this.topTexture.height - (drawHeight / topTextureHeight) * this.topTexture.height,
                 this.topTexture.width, (drawHeight / topTextureHeight) * this.topTexture.height,
-                this.x, i * topTextureHeight, this.width, drawHeight
+                Math.floor(this.x), i * topTextureHeight, this.width, drawHeight
             );
         }
 
@@ -114,7 +145,7 @@ class Pipe {
                 this.bottomTexture,
                 0, 0,
                 this.bottomTexture.width, (drawHeight / bottomTextureHeight) * this.bottomTexture.height,
-                this.x, 600 - this.bottom + i * bottomTextureHeight, this.width, drawHeight
+                Math.floor(this.x), 600 - this.bottom + i * bottomTextureHeight, this.width, drawHeight
             );
         }
     }
@@ -126,6 +157,7 @@ function init() {
     score = 0;
     gameStarted = false;
     tutorial.style.display = 'flex';
+    hideGameOverPopup();
 }
 
 function update() {
@@ -149,7 +181,7 @@ function update() {
                 bird.x + bird.size > pipe.x &&
                 (bird.y < pipe.top || bird.y + bird.size > 600 - pipe.bottom)
             ) {
-                init();
+                gameOver();
             }
         });
 
@@ -157,11 +189,21 @@ function update() {
         if (bgX <= -400) {
             bgX = 0;
         }
+
+        bgWallX -= GAME_SPEED * 0.5;
+        if (bgWallX <= -400) {
+            bgWallX = 0;
+        }
     }
 }
 
 function draw() {
-    // Draw background
+    if (!background || !backgroundWall) return;
+
+    // Draw backgrounds
+    
+    ctx.drawImage(backgroundWall, bgWallX, 0, 400, 600);
+    ctx.drawImage(backgroundWall, bgWallX + 400, 0, 400, 600);
     ctx.drawImage(background, bgX, 0, 400, 600);
     ctx.drawImage(background, bgX + 400, 0, 400, 600);
 
@@ -185,13 +227,50 @@ function handleInput() {
         gameStarted = true;
         tutorial.style.display = 'none';
     }
-    bird.flap();
+    if (bird) {
+        bird.flap();
+    }
 }
+
+function gameOver() {
+    gameStarted = false;
+    if (score > bestScore) {
+        bestScore = score;
+    }
+    showGameOverPopup();
+}
+
+// Замените функцию showGameOverPopup на следующую
+function showGameOverPopup() {
+    currentScoreElement.textContent = `Текущий результат: ${score}`;
+    bestScoreElement.textContent = `Лучший результат: ${bestScore}`;
+    gameOverPopup.classList.remove('hidden');
+    canvas.classList.add('blur');
+}
+
+// Добавьте эти функции
+function hideGameOverPopup() {
+    gameOverPopup.classList.add('hidden');
+    canvas.classList.remove('blur');
+}
+
+function restartGame() {
+    hideGameOverPopup();
+    init();
+    gameStarted = true;
+}
+
+function exitGame() {
+    // Placeholder for exit functionality
+    console.log('Exit button clicked');
+}
+
+// Добавьте эти обработчики событий в конец файла
+restartButton.addEventListener('click', restartGame);
+exitButton.addEventListener('click', exitGame);
 
 window.addEventListener('resize', resize);
 window.addEventListener('keydown', handleInput);
 window.addEventListener('touchstart', handleInput);
 
 resize();
-init();
-gameLoop();

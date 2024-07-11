@@ -1,15 +1,24 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird</title>
+    <title>Flappy Oreo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="tutorial">Tap to start!</div>
+    <div id="gameOverPopup" class="hidden">
+        <img src="assets/logo.png" alt="Logo" id="logo">
+        <h2>Игра окончена</h2>
+        <p id="currentScore"></p>
+        <p id="bestScore"></p>
+        <div id="buttonContainer">
+            <button id="restartButton">Рестарт</button>
+            <button id="exitButton">Выход</button>
+        </div>
+    </div>
     <script src="game.js"></script>
 </body>
 </html>
