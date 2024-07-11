@@ -8,12 +8,16 @@ let bird, pipes, score;
 let gameStarted = false;
 let frames = 0;
 
-const wallTextures = ['wall1', 'wall2', 'wall3'];
-const cupTextures = ['cup1', 'cup2', 'cup3'];
+const wallTextures = ['wall1', 'wall2', 'wall3', 'wall4', 'wall5', 'wall6', 'wall7'];
+const cupTextures = ['cup1', 'cup2', 'cup3', 'cup4', 'cup5', 'cup6', 'cup7', 'cup8',];
 
 const background = new Image();
 background.src = 'assets/BG.png';
 let bgX = 0;
+
+const GAME_SPEED = 2;
+const MIN_PIPE_HEIGHT = 110;
+const MAX_PIPE_HEIGHT = 120;
 
 function resize() {
     width = window.innerWidth;
@@ -29,9 +33,9 @@ class Bird {
         this.x = 50;
         this.y = 300;
         this.velocity = 0;
-        this.gravity = 0.5;
-        this.lift = -10;
-        this.size = 30;
+        this.gravity = 0.25;
+        this.lift = -5;
+        this.size = 60;
         this.image1 = new Image();
         this.image1.src = 'assets/bird1.png';
         this.image2 = new Image();
@@ -68,11 +72,11 @@ class Bird {
 
 class Pipe {
     constructor() {
-        this.top = Math.random() * 300 + 50;
-        this.bottom = 600 - this.top - 150;
+        this.top = Math.random() * (MAX_PIPE_HEIGHT - MIN_PIPE_HEIGHT) + MIN_PIPE_HEIGHT;
+        this.bottom = 550 - this.top - 150;
         this.x = 400;
-        this.width = 50;
-        this.speed = 2;
+        this.width = 100;
+        this.speed = GAME_SPEED;
         this.topTexture = new Image();
         this.bottomTexture = new Image();
         this.topTexture.src = `assets/${wallTextures[Math.floor(Math.random() * wallTextures.length)]}.png`;
@@ -87,13 +91,25 @@ class Pipe {
         const topTextureHeight = this.topTexture.height || this.top;
         const bottomTextureHeight = this.bottomTexture.height || this.bottom;
         
-        ctx.drawImage(this.topTexture, 
-            0, topTextureHeight - this.top, this.width, this.top,
-            this.x, 0, this.width, this.top);
+        // Draw top pipe
+        let topY = 0;
+        while (topY < this.top) {
+            const drawHeight = Math.min(topTextureHeight, this.top - topY);
+            ctx.drawImage(this.topTexture, 
+                0, topTextureHeight - drawHeight, this.width, drawHeight,
+                this.x, topY, this.width, drawHeight);
+            topY += drawHeight;
+        }
         
-        ctx.drawImage(this.bottomTexture,
-            0, 0, this.width, this.bottom,
-            this.x, 600 - this.bottom, this.width, this.bottom);
+        // Draw bottom pipe
+        let bottomY = 600 - this.bottom;
+        while (bottomY < 600) {
+            const drawHeight = Math.min(bottomTextureHeight, 600 - bottomY);
+            ctx.drawImage(this.bottomTexture,
+                0, 0, this.width, drawHeight,
+                this.x, bottomY, this.width, drawHeight);
+            bottomY += drawHeight;
+        }
     }
 }
 
@@ -130,7 +146,7 @@ function update() {
             }
         });
 
-        bgX -= 1;
+        bgX -= GAME_SPEED;
         if (bgX <= -400) {
             bgX = 0;
         }
