@@ -12,6 +12,7 @@ const loadingScreen = document.getElementById('loadingScreen');
 let width, height, scale;
 let bird, pipes, score, bestScore = 0;
 let gameStarted = false;
+let isGameOver = false;
 let gameFrames = 0;
 
 const GAME_SPEED = 2;
@@ -241,6 +242,7 @@ function init() {
     ];
     score = 0;
     gameStarted = false;
+    isGameOver = false;
     tutorial.style.display = 'flex';
     hideGameOverPopup();
 }
@@ -323,6 +325,8 @@ function gameLoop() {
 }
 
 function handleInput() {
+    if (isGameOver) return; // Игнорируем ввод, если игра завершена
+
     if (!gameStarted) {
         gameStarted = true;
         tutorial.style.display = 'none';
@@ -335,6 +339,7 @@ function handleInput() {
 
 function gameOver() {
     gameStarted = false;
+    isGameOver = true; // У
     if (score > bestScore) {
         bestScore = score;
     }
@@ -356,6 +361,7 @@ function hideGameOverPopup() {
 function restartGame() {
     hideGameOverPopup();
     init();
+    isGameOver = false; // 
     gameStarted = true;
     tutorial.style.display = 'none';
     gameLoop();
