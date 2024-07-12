@@ -14,8 +14,8 @@ let gameStarted = false;
 let frames = 0;
 
 const GAME_SPEED = 2;
-const MIN_PIPE_HEIGHT = 110;
-const MAX_PIPE_HEIGHT = 120;
+const MIN_PIPE_HEIGHT = 130;
+const MAX_PIPE_HEIGHT = 160;
 
 // Кеш для изображений
 const imageCache = {};
@@ -37,8 +37,12 @@ function loadImage(src) {
 const imageSources = [
     'assets/bird1.png', 'assets/bird2.png',
     'assets/wall1.png', 'assets/wall2.png', 'assets/wall3.png',
+    'assets/wall4.png', 'assets/wall5.png', 'assets/wall6.png',
+    'assets/wall7.png',
     'assets/cup1.png', 'assets/cup2.png', 'assets/cup3.png',
-    'assets/BG.png', 'assets/BG.png', 'assets/logo.png'
+    'assets/cup4.png', 'assets/cup5.png', 'assets/cup6.png',
+    'assets/cup7.png', 'assets/cup8.png',
+    'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png'
 ];
 
 let background, backgroundWall;
@@ -46,8 +50,8 @@ let bgX = 0;
 let bgWallX = 0;
 
 Promise.all(imageSources.map(loadImage)).then(() => {
-    background = imageCache['assets/BG.png'];
-    backgroundWall = imageCache['assets/BG.png'];
+    background = imageCache['assets/bg_table.png'];
+    backgroundWall = imageCache['assets/bg_wall.png'];
     init();
     gameLoop();
 }).catch(error => {
@@ -110,8 +114,8 @@ class Pipe {
         this.x = 400;
         this.width = 50;
         this.speed = GAME_SPEED;
-        this.topTexture = imageCache[`assets/wall${Math.floor(Math.random() * 3) + 1}.png`];
-        this.bottomTexture = imageCache[`assets/cup${Math.floor(Math.random() * 3) + 1}.png`];
+        this.topTexture = imageCache[`assets/wall${Math.floor(Math.random() * 7) + 1}.png`];
+        this.bottomTexture = imageCache[`assets/cup${Math.floor(Math.random() * 8) + 1}.png`];
     }
 
     update() {
