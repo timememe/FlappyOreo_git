@@ -21,9 +21,14 @@ const MAX_PIPE_HEIGHT = 160;
 const imageCache = {};
 const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
 'assets/frame4.png', 'assets/frame5.png'];
+const windowImages = ['assets/window1.png'];
+const innerWindowImages = ['assets/inner1.png', 'assets/inner2.png', 'assets/inner3.png'];
 const FRAME_WIDTH = 400;
 const FRAME_HEIGHT = 225;
 const FRAME_GAP = 300; // Отступ между фреймами
+const WINDOW_WIDTH = 400 / 2;
+const WINDOW_HEIGHT = 225 / 2;
+const INNER_WINDOW_SPEED = 0.025; // Скорость движения внутреннего изображения окна
 
 let background, backgroundWall;
 let bgX = 0;
@@ -50,7 +55,7 @@ const imageSources = [
     'assets/cup4.png', 'assets/cup5.png', 'assets/cup6.png',
     'assets/cup7.png', 'assets/cup8.png',
     'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png',
-    ...frameImages
+    ...frameImages, ...windowImages, ...innerWindowImages
 ];
 
 loadingScreen.style.display = 'flex';
@@ -175,12 +180,65 @@ class Frame {
     }
 }
 
+class Window {
+    constructor(x) {
+        this.x = x;
+        this.image = imageCache[windowImages[Math.floor(Math.random() * windowImages.length)]];
+        this.innerImage = imageCache[innerWindowImages[Math.floor(Math.random() * innerWindowImages.length)]];
+        this.innerX = 0;
+        this.scale = 1.5; // Увеличиваем внутреннее изображение на 20%
+    }
+
+    update() {
+        this.x -= GAME_SPEED * 0.5;
+        this.innerX -= GAME_SPEED * INNER_WINDOW_SPEED;
+        if (this.innerX <= -WINDOW_WIDTH) {
+            this.innerX = 0;
+        }
+    }
+
+    draw() {
+        // Рисуем внутреннее изображение окна
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+        ctx.clip();
+        
+        const scaledWidth = WINDOW_WIDTH * this.scale;
+        const scaledHeight = WINDOW_HEIGHT * this.scale;
+        const offsetX = (WINDOW_WIDTH - scaledWidth) / 20;
+        const offsetY = (WINDOW_HEIGHT - scaledHeight) / 20;
+        
+        ctx.drawImage(
+            this.innerImage, 
+            this.x + this.innerX + offsetX, 
+            100 + offsetY, 
+            scaledWidth, 
+            scaledHeight
+        );
+        ctx.drawImage(
+            this.innerImage, 
+            this.x + this.innerX + WINDOW_WIDTH + offsetX, 
+            100 + offsetY, 
+            scaledWidth, 
+            scaledHeight
+        );
+        ctx.restore();
+
+        // Рисуем рамку окна
+        ctx.drawImage(this.image, this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+    }
+}
+
 let frames = [];
 
 function init() {
     bird = new Bird();
     pipes = [];
-    frames = [new Frame(0), new Frame(FRAME_WIDTH + FRAME_GAP)];
+    frames = [
+        Math.random() < 0.5 ? new Frame(0) : new Window(0),
+        Math.random() < 0.5 ? new Frame(FRAME_WIDTH + FRAME_GAP) : new Window(FRAME_WIDTH + FRAME_GAP)
+    ];
     score = 0;
     gameStarted = false;
     tutorial.style.display = 'flex';
@@ -214,7 +272,7 @@ function update() {
         });
 
         if (frames[frames.length - 1].x <= 400 - FRAME_WIDTH - FRAME_GAP) {
-            frames.push(new Frame(400));
+            frames.push(Math.random() < 0.5 ? new Frame(400) : new Window(400));
         }
 
         frames.forEach((frame, index) => {
@@ -299,6 +357,7 @@ function restartGame() {
     hideGameOverPopup();
     init();
     gameStarted = true;
+    tutorial.style.display = 'none';
     gameLoop();
 }
 
