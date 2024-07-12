@@ -23,7 +23,7 @@ const imageCache = {};
 const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
 'assets/frame4.png', 'assets/frame5.png'];
 const windowImages = ['assets/window1.png'];
-const innerWindowImages = ['assets/inner1.png', 'assets/inner2.png', 'assets/inner3.png'];
+const innerWindowImages = ['assets/inner1.png'];
 const FRAME_WIDTH = 400;
 const FRAME_HEIGHT = 225;
 const FRAME_GAP = 300; // Отступ между фреймами
@@ -187,7 +187,7 @@ class Window {
         this.image = imageCache[windowImages[Math.floor(Math.random() * windowImages.length)]];
         this.innerImage = imageCache[innerWindowImages[Math.floor(Math.random() * innerWindowImages.length)]];
         this.innerX = 0;
-        this.scale = 1.5; // Увеличиваем внутреннее изображение на 20%
+        this.scale = 1; // Увеличиваем внутреннее изображение на 20%
     }
 
     update() {
