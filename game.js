@@ -7,20 +7,28 @@ const currentScoreElement = document.getElementById('currentScore');
 const bestScoreElement = document.getElementById('bestScore');
 const restartButton = document.getElementById('restartButton');
 const exitButton = document.getElementById('exitButton');
+const loadingScreen = document.getElementById('loadingScreen');
 
 let width, height, scale;
 let bird, pipes, score, bestScore = 0;
 let gameStarted = false;
-let frames = 0;
+let gameFrames = 0;
 
 const GAME_SPEED = 2;
 const MIN_PIPE_HEIGHT = 130;
 const MAX_PIPE_HEIGHT = 160;
 
-// Кеш для изображений
 const imageCache = {};
+const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
+'assets/frame4.png', 'assets/frame5.png'];
+const FRAME_WIDTH = 400;
+const FRAME_HEIGHT = 225;
+const FRAME_GAP = 300; // Отступ между фреймами
 
-// Функция для загрузки изображения в кеш
+let background, backgroundWall;
+let bgX = 0;
+let bgWallX = 0;
+
 function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -33,7 +41,6 @@ function loadImage(src) {
     });
 }
 
-// Загрузка всех изображений
 const imageSources = [
     'assets/bird1.png', 'assets/bird2.png',
     'assets/wall1.png', 'assets/wall2.png', 'assets/wall3.png',
@@ -42,16 +49,16 @@ const imageSources = [
     'assets/cup1.png', 'assets/cup2.png', 'assets/cup3.png',
     'assets/cup4.png', 'assets/cup5.png', 'assets/cup6.png',
     'assets/cup7.png', 'assets/cup8.png',
-    'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png'
+    'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png',
+    ...frameImages
 ];
 
-let background, backgroundWall;
-let bgX = 0;
-let bgWallX = 0;
+loadingScreen.style.display = 'flex';
 
 Promise.all(imageSources.map(loadImage)).then(() => {
     background = imageCache['assets/bg_table.png'];
     backgroundWall = imageCache['assets/bg_wall.png'];
+    loadingScreen.style.display = 'none';
     init();
     gameLoop();
 }).catch(error => {
@@ -123,7 +130,6 @@ class Pipe {
     }
 
     draw() {
-        // Отрисовка верхней трубы
         const topAspectRatio = this.topTexture.width / this.topTexture.height;
         const topTextureHeight = this.width / topAspectRatio;
         const topRepeat = Math.ceil(this.top / topTextureHeight);
@@ -138,7 +144,6 @@ class Pipe {
             );
         }
 
-        // Отрисовка нижней трубы
         const bottomAspectRatio = this.bottomTexture.width / this.bottomTexture.height;
         const bottomTextureHeight = this.width / bottomAspectRatio;
         const bottomRepeat = Math.ceil(this.bottom / bottomTextureHeight);
@@ -155,9 +160,27 @@ class Pipe {
     }
 }
 
+class Frame {
+    constructor(x) {
+        this.x = x;
+        this.image = imageCache[frameImages[Math.floor(Math.random() * frameImages.length)]];
+    }
+
+    update() {
+        this.x -= GAME_SPEED * 0.5;
+    }
+
+    draw() {
+        ctx.drawImage(this.image, this.x, 100, FRAME_WIDTH, FRAME_HEIGHT);
+    }
+}
+
+let frames = [];
+
 function init() {
     bird = new Bird();
     pipes = [];
+    frames = [new Frame(0), new Frame(FRAME_WIDTH + FRAME_GAP)];
     score = 0;
     gameStarted = false;
     tutorial.style.display = 'flex';
@@ -168,7 +191,7 @@ function update() {
     if (gameStarted) {
         bird.update();
 
-        if (frames % 100 === 0) {
+        if (gameFrames % 100 === 0) {
             pipes.push(new Pipe());
         }
 
@@ -186,6 +209,18 @@ function update() {
                 (bird.y < pipe.top || bird.y + bird.size > 600 - pipe.bottom)
             ) {
                 gameOver();
+                return;
+            }
+        });
+
+        if (frames[frames.length - 1].x <= 400 - FRAME_WIDTH - FRAME_GAP) {
+            frames.push(new Frame(400));
+        }
+
+        frames.forEach((frame, index) => {
+            frame.update();
+            if (frame.x + FRAME_WIDTH < 0) {
+                frames.splice(index, 1);
             }
         });
 
@@ -204,10 +239,11 @@ function update() {
 function draw() {
     if (!background || !backgroundWall) return;
 
-    // Draw backgrounds
-    
     ctx.drawImage(backgroundWall, bgWallX, 0, 400, 600);
     ctx.drawImage(backgroundWall, bgWallX + 400, 0, 400, 600);
+
+    frames.forEach(frame => frame.draw());
+
     ctx.drawImage(background, bgX, 0, 400, 600);
     ctx.drawImage(background, bgX + 400, 0, 400, 600);
 
@@ -220,16 +256,19 @@ function draw() {
 }
 
 function gameLoop() {
-    frames++;
+    gameFrames++;
     update();
     draw();
-    requestAnimationFrame(gameLoop);
+    if (gameStarted) {
+        requestAnimationFrame(gameLoop);
+    }
 }
 
 function handleInput() {
     if (!gameStarted) {
         gameStarted = true;
         tutorial.style.display = 'none';
+        gameLoop();
     }
     if (bird) {
         bird.flap();
@@ -244,7 +283,6 @@ function gameOver() {
     showGameOverPopup();
 }
 
-// Замените функцию showGameOverPopup на следующую
 function showGameOverPopup() {
     currentScoreElement.textContent = `Текущий результат: ${score}`;
     bestScoreElement.textContent = `Лучший результат: ${bestScore}`;
@@ -252,7 +290,6 @@ function showGameOverPopup() {
     canvas.classList.add('blur');
 }
 
-// Добавьте эти функции
 function hideGameOverPopup() {
     gameOverPopup.classList.add('hidden');
     canvas.classList.remove('blur');
@@ -262,14 +299,13 @@ function restartGame() {
     hideGameOverPopup();
     init();
     gameStarted = true;
+    gameLoop();
 }
 
 function exitGame() {
-    // Placeholder for exit functionality
     console.log('Exit button clicked');
 }
 
-// Добавьте эти обработчики событий в конец файла
 restartButton.addEventListener('click', restartGame);
 exitButton.addEventListener('click', exitGame);
 
