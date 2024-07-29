@@ -10,7 +10,7 @@ const exitButton = document.getElementById('exitButton');
 const loadingScreen = document.getElementById('loadingScreen');
 
 let width, height, scale;
-let bird, pipes, score, bestScore = 0;
+let bird, pipes, bestScore = 0;
 let gameStarted = false;
 let isGameOver = false;
 let gameFrames = 0;
@@ -18,6 +18,8 @@ let gameFrames = 0;
 const GAME_SPEED = 2;
 const MIN_PIPE_HEIGHT = 130;
 const MAX_PIPE_HEIGHT = 160;
+const PIPES_TO_WIN = 10; // Количество труб для победы
+let remainingPipes = PIPES_TO_WIN; // Оставшиеся трубы
 
 const imageCache = {};
 const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
@@ -199,7 +201,6 @@ class Window {
     }
 
     draw() {
-        // Рисуем внутреннее изображение окна
         ctx.save();
         ctx.beginPath();
         ctx.rect(this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -226,7 +227,6 @@ class Window {
         );
         ctx.restore();
 
-        // Рисуем рамку окна
         ctx.drawImage(this.image, this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
     }
 }
@@ -240,7 +240,7 @@ function init() {
         Math.random() < 0.5 ? new Frame(0) : new Window(0),
         Math.random() < 0.5 ? new Frame(FRAME_WIDTH + FRAME_GAP) : new Window(FRAME_WIDTH + FRAME_GAP)
     ];
-    score = 0;
+    remainingPipes = PIPES_TO_WIN; // Инициализация оставшихся труб
     gameStarted = false;
     isGameOver = false;
     tutorial.style.display = 'flex';
@@ -260,7 +260,11 @@ function update() {
 
             if (pipe.x + pipe.width < 0) {
                 pipes.splice(index, 1);
-                score++;
+                remainingPipes--; // Уменьшаем количество оставшихся труб
+                if (remainingPipes <= 0) {
+                    gameWin(); // Вызываем функцию победы
+                    return;
+                }
             }
 
             if (
@@ -312,7 +316,7 @@ function draw() {
 
     ctx.fillStyle = 'black';
     ctx.font = '20px Arial';
-    ctx.fillText(`Score: ${score}`, 10, 30);
+    ctx.fillText(`Осталось труб: ${remainingPipes}`, 10, 30);
 }
 
 function gameLoop() {
@@ -325,7 +329,7 @@ function gameLoop() {
 }
 
 function handleInput() {
-    if (isGameOver) return; // Игнорируем ввод, если игра завершена
+    if (isGameOver) return;
 
     if (!gameStarted) {
         gameStarted = true;
@@ -339,16 +343,29 @@ function handleInput() {
 
 function gameOver() {
     gameStarted = false;
-    isGameOver = true; // У
-    if (score > bestScore) {
-        bestScore = score;
+    isGameOver = true;
+    if (PIPES_TO_WIN - remainingPipes > bestScore) {
+        bestScore = PIPES_TO_WIN - remainingPipes;
     }
     showGameOverPopup();
 }
 
+function gameWin() {
+    gameStarted = false;
+    isGameOver = true;
+    showGameWinPopup();
+}
+
 function showGameOverPopup() {
-    currentScoreElement.textContent = `Текущий результат: ${score}`;
-    bestScoreElement.textContent = `Лучший результат: ${bestScore}`;
+    currentScoreElement.textContent = `Пройдено труб: ${PIPES_TO_WIN - remainingPipes}`;
+    bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
+    gameOverPopup.classList.remove('hidden');
+    canvas.classList.add('blur');
+}
+
+function showGameWinPopup() {
+    currentScoreElement.textContent = `Поздравляем! Вы прошли все ${PIPES_TO_WIN} труб!`;
+    bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
     gameOverPopup.classList.remove('hidden');
     canvas.classList.add('blur');
 }
@@ -361,7 +378,7 @@ function hideGameOverPopup() {
 function restartGame() {
     hideGameOverPopup();
     init();
-    isGameOver = false; // 
+    isGameOver = false;
     gameStarted = true;
     tutorial.style.display = 'none';
     gameLoop();
