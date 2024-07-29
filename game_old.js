@@ -22,11 +22,20 @@ const PIPES_TO_WIN = 10; // Количество труб для победы
 let remainingPipes = PIPES_TO_WIN; // Оставшиеся трубы
 
 const imageCache = {};
+const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
+'assets/frame4.png', 'assets/frame5.png'];
+const windowImages = ['assets/window1.png'];
+const innerWindowImages = ['assets/inner1.png', 'assets/inner2.png', 'assets/inner3.png'];
+const FRAME_WIDTH = 400;
+const FRAME_HEIGHT = 225;
+const FRAME_GAP = 300; // Отступ между фреймами
+const WINDOW_WIDTH = 400 / 2;
+const WINDOW_HEIGHT = 225 / 2;
+const INNER_WINDOW_SPEED = 0.025; // Скорость движения внутреннего изображения окна
 
-let background, backgroundStars, floor;
+let background, backgroundWall;
 let bgX = 0;
-let bgStarsX = 0;
-let floorX = 0;
+let bgWallX = 0;
 
 function loadImage(src) {
     return new Promise((resolve, reject) => {
@@ -42,16 +51,21 @@ function loadImage(src) {
 
 const imageSources = [
     'assets/bird1.png', 'assets/bird2.png',
-    'assets/wall.png',
-    'assets/floor.png', 'assets/bg.png', 'assets/bg_stars.png', 'assets/logo.png'
+    'assets/wall1.png', 'assets/wall2.png', 'assets/wall3.png',
+    'assets/wall4.png', 'assets/wall5.png', 'assets/wall6.png',
+    'assets/wall7.png',
+    'assets/cup1.png', 'assets/cup2.png', 'assets/cup3.png',
+    'assets/cup4.png', 'assets/cup5.png', 'assets/cup6.png',
+    'assets/cup7.png', 'assets/cup8.png',
+    'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png',
+    ...frameImages, ...windowImages, ...innerWindowImages
 ];
 
 loadingScreen.style.display = 'flex';
 
 Promise.all(imageSources.map(loadImage)).then(() => {
-    background = imageCache['assets/bg.png'];
-    backgroundStars = imageCache['assets/bg_stars.png'];
-    floor = imageCache['assets/floor.png'];
+    background = imageCache['assets/bg_table.png'];
+    backgroundWall = imageCache['assets/bg_wall.png'];
     loadingScreen.style.display = 'none';
     init();
     gameLoop();
@@ -115,8 +129,8 @@ class Pipe {
         this.x = 400;
         this.width = 50;
         this.speed = GAME_SPEED;
-        this.topTexture = imageCache['assets/wall.png'];
-        this.bottomTexture = imageCache['assets/wall.png'];
+        this.topTexture = imageCache[`assets/wall${Math.floor(Math.random() * 7) + 1}.png`];
+        this.bottomTexture = imageCache[`assets/cup${Math.floor(Math.random() * 8) + 1}.png`];
     }
 
     update() {
@@ -154,10 +168,79 @@ class Pipe {
     }
 }
 
+class Frame {
+    constructor(x) {
+        this.x = x;
+        this.image = imageCache[frameImages[Math.floor(Math.random() * frameImages.length)]];
+    }
+
+    update() {
+        this.x -= GAME_SPEED * 0.5;
+    }
+
+    draw() {
+        ctx.drawImage(this.image, this.x, 100, FRAME_WIDTH, FRAME_HEIGHT);
+    }
+}
+
+class Window {
+    constructor(x) {
+        this.x = x;
+        this.image = imageCache[windowImages[Math.floor(Math.random() * windowImages.length)]];
+        this.innerImage = imageCache[innerWindowImages[Math.floor(Math.random() * innerWindowImages.length)]];
+        this.innerX = 0;
+        this.scale = 1; // Увеличиваем внутреннее изображение на 20%
+    }
+
+    update() {
+        this.x -= GAME_SPEED * 0.5;
+        this.innerX -= GAME_SPEED * INNER_WINDOW_SPEED;
+        if (this.innerX <= -WINDOW_WIDTH) {
+            this.innerX = 0;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+        ctx.clip();
+        
+        const scaledWidth = WINDOW_WIDTH * this.scale;
+        const scaledHeight = WINDOW_HEIGHT * this.scale;
+        const offsetX = (WINDOW_WIDTH - scaledWidth) / 20;
+        const offsetY = (WINDOW_HEIGHT - scaledHeight) / 20;
+        
+        ctx.drawImage(
+            this.innerImage, 
+            this.x + this.innerX + offsetX, 
+            100 + offsetY, 
+            scaledWidth, 
+            scaledHeight
+        );
+        ctx.drawImage(
+            this.innerImage, 
+            this.x + this.innerX + WINDOW_WIDTH + offsetX, 
+            100 + offsetY, 
+            scaledWidth, 
+            scaledHeight
+        );
+        ctx.restore();
+
+        ctx.drawImage(this.image, this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+    }
+}
+
+let frames = [];
+
 function init() {
     bird = new Bird();
     pipes = [];
-    remainingPipes = PIPES_TO_WIN;
+    frames = [
+        Math.random() < 0.5 ? new Frame(0) : new Window(0),
+        Math.random() < 0.5 ? new Frame(FRAME_WIDTH + FRAME_GAP) : new Window(FRAME_WIDTH + FRAME_GAP)
+    ];
+    remainingPipes = PIPES_TO_WIN; // Инициализация оставшихся труб
     gameStarted = false;
     isGameOver = false;
     tutorial.style.display = 'flex';
@@ -177,9 +260,9 @@ function update() {
 
             if (pipe.x + pipe.width < 0) {
                 pipes.splice(index, 1);
-                remainingPipes--;
+                remainingPipes--; // Уменьшаем количество оставшихся труб
                 if (remainingPipes <= 0) {
-                    gameWin();
+                    gameWin(); // Вызываем функцию победы
                     return;
                 }
             }
@@ -194,46 +277,41 @@ function update() {
             }
         });
 
-        bgX -= GAME_SPEED * 0.5;
-        bgStarsX -= GAME_SPEED * 0.75;
-        floorX -= GAME_SPEED;
+        if (frames[frames.length - 1].x <= 400 - FRAME_WIDTH - FRAME_GAP) {
+            frames.push(Math.random() < 0.5 ? new Frame(400) : new Window(400));
+        }
 
-        // Сброс позиций фона при достижении края
-        if (bgX <= -background.width) bgX = 0;
-        if (bgStarsX <= -backgroundStars.width) bgStarsX = 0;
-        if (floorX <= -floor.width) floorX = 0;
-    }
-}
+        frames.forEach((frame, index) => {
+            frame.update();
+            if (frame.x + FRAME_WIDTH < 0) {
+                frames.splice(index, 1);
+            }
+        });
 
-function drawBackground(image, x, speed) {
-    const aspectRatio = image.width / image.height;
-    const scaledHeight = 600;
-    const scaledWidth = scaledHeight * aspectRatio;
-    
-    let currentX = x;
-    while (currentX < 400) {
-        ctx.drawImage(image, currentX, 0, scaledWidth, scaledHeight);
-        currentX += scaledWidth;
+        bgX -= GAME_SPEED;
+        if (bgX <= -400) {
+            bgX = 0;
+        }
+
+        bgWallX -= GAME_SPEED * 0.5;
+        if (bgWallX <= -400) {
+            bgWallX = 0;
+        }
     }
-    ctx.drawImage(image, x - scaledWidth, 0, scaledWidth, scaledHeight);
 }
 
 function draw() {
-    if (!background || !backgroundStars || !floor) return;
+    if (!background || !backgroundWall) return;
 
-    // Рисуем основной фон
-    drawBackground(background, bgX, GAME_SPEED * 0.5);
+    ctx.drawImage(backgroundWall, bgWallX, 0, 400, 600);
+    ctx.drawImage(backgroundWall, bgWallX + 400, 0, 400, 600);
 
-    // Рисуем фон со звездами
-    drawBackground(backgroundStars, bgStarsX, GAME_SPEED * 0.75);
+    frames.forEach(frame => frame.draw());
 
-    // Рисуем трубы
+    ctx.drawImage(background, bgX, 0, 400, 600);
+    ctx.drawImage(background, bgX + 400, 0, 400, 600);
+
     pipes.forEach(pipe => pipe.draw());
-
-    // Рисуем передний фон (пол)
-    drawBackground(floor, floorX, GAME_SPEED);
-
-    // Рисуем птицу
     bird.draw();
 
     ctx.fillStyle = 'black';
