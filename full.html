@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Oreo</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <style>
     #gameCanvas {
@@ -84,7 +83,7 @@
     </div>
     <div id="tutorial">Tap to start!</div>
     <div id="gameOverPopup" class="hidden">
-        <img src="assets/logo.png" alt="Logo" id="logo">
+        <img src="https://cdn.jsdelivr.net/gh/timememe/o_files@main/logo.png" alt="Logo" id="logo">
         <h2>Игра окончена</h2>
         <p id="currentScore"></p>
         <p id="bestScore"></p>
@@ -137,17 +136,21 @@
         }
 
         const imageSources = [
-            'assets/bird1.png', 'assets/bird2.png',
-            'assets/wall.png',
-            'assets/floor.png', 'assets/bg.png', 'assets/bg_stars.png', 'assets/logo.png'
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird1.png', 
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird2.png',
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png',
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/floor.png', 
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg.png', 
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg_stars.png', 
+            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/logo.png'
         ];
 
         loadingScreen.style.display = 'flex';
 
         Promise.all(imageSources.map(loadImage)).then(() => {
-            background = imageCache['assets/bg.png'];
-            backgroundStars = imageCache['assets/bg_stars.png'];
-            floor = imageCache['assets/floor.png'];
+            background = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg.png'];
+            backgroundStars = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg_stars.png'];
+            floor = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/floor.png'];
             loadingScreen.style.display = 'none';
             init();
             gameLoop();
@@ -172,8 +175,8 @@
                 this.gravity = 0.25;
                 this.lift = -5;
                 this.size = 45;
-                this.image1 = imageCache['assets/bird1.png'];
-                this.image2 = imageCache['assets/bird2.png'];
+                this.image1 = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird1.png'];
+                this.image2 = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird2.png'];
                 this.currentImage = this.image1;
             }
 
@@ -211,8 +214,8 @@
                 this.x = 400;
                 this.width = 50;
                 this.speed = GAME_SPEED;
-                this.topTexture = imageCache['assets/wall.png'];
-                this.bottomTexture = imageCache['assets/wall.png'];
+                this.topTexture = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png'];
+                this.bottomTexture = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png'];
             }
 
             update() {
