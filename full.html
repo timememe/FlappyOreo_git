@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Oreo</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/lineSpinner.js"></script>
+    <title>Flyoreo</title>
 </head>
 <style>
-    #gameCanvas {
-        border: 10px solid white;
-        margin: 0;
-        padding: 0;
+    @font-face {
+        font-family: 'PlutoOreo';
+        src: url('https://cdn.jsdelivr.net/gh/timememe/o_files@main/PlutoOreo-Black.otf') format('opentype');
+    }
+
+    #gameCanvasWrapper {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
+        margin: 0;
+        padding: 0;
         background-color: #0058C9;
-        overflow: hidden;
+    }
+
+    #gameCanvas {
+        border: 0px solid white;
     }
 
     #tutorial {
         position: absolute;
         font-size: 24px;
-        font-family: Arial, sans-serif;
+        font-family: 'PlutoOreo', Arial, sans-serif;
         color: white;
         text-align: center;
         display: flex;
@@ -30,6 +38,7 @@
         width: 100%;
         height: 100%;
         pointer-events: none;
+        z-index: 9999;
     }
 
     #gameOverPopup {
@@ -42,7 +51,7 @@
         border-radius: 10px;
         text-align: center;
         color: white;
-        font-family: Arial, sans-serif;
+        font-family: 'PlutoOreo', Arial, sans-serif;
         z-index: 10;
     }
 
@@ -57,12 +66,12 @@
 
     #buttonContainer {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
         gap: 10px;
         margin-top: 20px;
     }
 
-    button {
+    .buttonG {
         padding: 10px;
         border-radius: 5px;
         border: none;
@@ -70,32 +79,56 @@
         color: #0058C9;
         cursor: pointer;
         font-size: 16px;
+        font-family: 'PlutoOreo', Arial, sans-serif;
     }
 
     .blur {
         filter: blur(5px);
     }
+
+    #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0029a3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 24px;
+        }
 </style>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="loadingScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; display: flex; justify-content: center; align-items: center; z-index: 1000;">
-        Загрузка...
+    <div id="gameCanvasWrapper">
+        <div id="tutorial">Тапай и долети до финиша!</div>
+        <canvas id="gameCanvas"></canvas>
     </div>
-    <div id="tutorial">Tap to start!</div>
+    <div id="loadingScreen">
+        <l-line-spinner
+          size="40"
+          stroke="3"
+          speed="1"
+          color="white" 
+        ></l-line-spinner>
+    </div>
+    
     <div id="gameOverPopup" class="hidden">
         <img src="https://cdn.jsdelivr.net/gh/timememe/o_files@main/logo.png" alt="Logo" id="logo">
         <h2>Игра окончена</h2>
         <p id="currentScore"></p>
         <p id="bestScore"></p>
         <div id="buttonContainer">
-            <button id="restartButton">Рестарт</button>
-            <button id="exitButton">Выход</button>
+            <button id="restartButton" class="buttonG">Рестарт</button>
+            <button id="exitButton" class="buttonG">Личный кабинет</button>
         </div>
     </div>
     <script>
         // game.js
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const ctx = gameCanvas.getContext('2d');
         const tutorial = document.getElementById('tutorial');
         const gameOverPopup = document.getElementById('gameOverPopup');
         const currentScoreElement = document.getElementById('currentScore');
@@ -113,8 +146,8 @@
         const GAME_SPEED = 2;
         const MIN_PIPE_HEIGHT = 130;
         const MAX_PIPE_HEIGHT = 160;
-        const PIPES_TO_WIN = 10; // Количество труб для победы
-        let remainingPipes = PIPES_TO_WIN; // Оставшиеся трубы
+        const PIPES_TO_WIN = 10;
+        let remainingPipes = PIPES_TO_WIN;
 
         const imageCache = {};
 
@@ -162,8 +195,8 @@
             width = window.innerWidth;
             height = window.innerHeight;
             scale = Math.min(width / 400, height / 600);
-            canvas.width = 400 * scale;
-            canvas.height = 600 * scale;
+            gameCanvas.width = 400 * scale;
+            gameCanvas.height = 600 * scale;
             ctx.scale(scale, scale);
         }
 
@@ -320,24 +353,16 @@
         function draw() {
             if (!background || !backgroundStars || !floor) return;
 
-            // Рисуем основной фон
             drawBackground(background, bgX, GAME_SPEED * 0.5);
-
-            // Рисуем фон со звездами
             drawBackground(backgroundStars, bgStarsX, GAME_SPEED * 0.75);
-
-            // Рисуем трубы
             pipes.forEach(pipe => pipe.draw());
-
-            // Рисуем передний фон (пол)
             drawBackground(floor, floorX, GAME_SPEED);
-
-            // Рисуем птицу
             bird.draw();
 
-            ctx.fillStyle = 'black';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Осталось труб: ${remainingPipes}`, 10, 30);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px PlutoOreo';
+            ctx.textAlign = 'center';
+            ctx.fillText(`До финиша: ${remainingPipes}`, 200, 30);
         }
 
         function gameLoop() {
@@ -378,22 +403,26 @@
         }
 
         function showGameOverPopup() {
-            currentScoreElement.textContent = `Пройдено труб: ${PIPES_TO_WIN - remainingPipes}`;
-            bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
+            currentScoreElement.textContent = `Пройдено препятствий: ${PIPES_TO_WIN - remainingPipes}`;
+            bestScoreElement.textContent = `Лучший результат: ${bestScore} препятствий`;
             gameOverPopup.classList.remove('hidden');
-            canvas.classList.add('blur');
+            gameCanvas.classList.add('blur');
+            restartButton.style.display = 'block';
+            exitButton.style.display = 'none';
         }
 
         function showGameWinPopup() {
-            currentScoreElement.textContent = `Поздравляем! Вы прошли все ${PIPES_TO_WIN} труб!`;
-            bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
+            currentScoreElement.textContent = `Поздравляем! Вы прошли все ${PIPES_TO_WIN} препятствий!`;
+            //bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
             gameOverPopup.classList.remove('hidden');
-            canvas.classList.add('blur');
+            gameCanvas.classList.add('blur');
+            restartButton.style.display = 'none';
+            exitButton.style.display = 'block';
         }
 
         function hideGameOverPopup() {
             gameOverPopup.classList.add('hidden');
-            canvas.classList.remove('blur');
+            gameCanvas.classList.remove('blur');
         }
 
         function restartGame() {
@@ -406,7 +435,7 @@
         }
 
         function exitGame() {
-            console.log('Exit button clicked');
+            window.location.href = "https://oreo-promo.com/profile";
         }
 
         restartButton.addEventListener('click', restartGame);
@@ -415,6 +444,7 @@
         window.addEventListener('resize', resize);
         window.addEventListener('keydown', handleInput);
         window.addEventListener('touchstart', handleInput);
+        gameCanvas.addEventListener('mousedown', handleInput);
 
         resize();
     </script>
