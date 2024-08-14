@@ -514,6 +514,28 @@
             }
         }
 
+        function awardPoints(points) {
+            const data = {
+                points: points,
+                reason: 'Победа в игре "Флайорео"'
+            };
+        
+            fetch('/api/mechanics/127/apply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Points awarded successfully:', result);
+            })
+            .catch(error => {
+                console.error('Error awarding points:', error);
+            });
+        }
+
         function exitGame() {
             awardPoints(100);
         }
