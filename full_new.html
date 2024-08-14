@@ -127,8 +127,8 @@
     </div>
     <script>
         // game.js
-        const gameCanvas = document.getElementById('gameCanvas');
-        const ctx = gameCanvas.getContext('2d');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         const tutorial = document.getElementById('tutorial');
         const gameOverPopup = document.getElementById('gameOverPopup');
         const currentScoreElement = document.getElementById('currentScore');
@@ -145,16 +145,25 @@
 
         const GAME_SPEED = 2;
         const MIN_PIPE_HEIGHT = 130;
-        const MAX_PIPE_HEIGHT = 200;
-        const PIPES_TO_WIN = 10;
-        let remainingPipes = PIPES_TO_WIN;
+        const MAX_PIPE_HEIGHT = 160;
+        const PIPES_TO_WIN = 10; // Количество труб для победы
+        let remainingPipes = PIPES_TO_WIN; // Оставшиеся трубы
 
         const imageCache = {};
+        const frameImages = ['assets/frame1.png', 'assets/frame2.png', 'assets/frame3.png',
+        'assets/frame4.png', 'assets/frame5.png'];
+        const windowImages = ['assets/window1.png'];
+        const innerWindowImages = ['assets/inner1.png', 'assets/inner2.png', 'assets/inner3.png'];
+        const FRAME_WIDTH = 400;
+        const FRAME_HEIGHT = 225;
+        const FRAME_GAP = 300; // Отступ между фреймами
+        const WINDOW_WIDTH = 400 / 2;
+        const WINDOW_HEIGHT = 225 / 2;
+        const INNER_WINDOW_SPEED = 0.025; // Скорость движения внутреннего изображения окна
 
-        let background, backgroundStars, floor;
+        let background, backgroundWall;
         let bgX = 0;
-        let bgStarsX = 0;
-        let floorX = 0;
+        let bgWallX = 0;
 
         function loadImage(src) {
             return new Promise((resolve, reject) => {
@@ -169,21 +178,22 @@
         }
 
         const imageSources = [
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird1.png', 
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird2.png',
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png',
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/floor.png', 
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg.png', 
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg_stars.png', 
-            'https://cdn.jsdelivr.net/gh/timememe/o_files@main/logo.png'
+            'assets/bird1.png', 'assets/bird2.png',
+            'assets/wall1.png', 'assets/wall2.png', 'assets/wall3.png',
+            'assets/wall4.png', 'assets/wall5.png', 'assets/wall6.png',
+            'assets/wall7.png',
+            'assets/cup1.png', 'assets/cup2.png', 'assets/cup3.png',
+            'assets/cup4.png', 'assets/cup5.png', 'assets/cup6.png',
+            'assets/cup7.png', 'assets/cup8.png',
+            'assets/bg_table.png', 'assets/bg_wall.png', 'assets/logo.png',
+            ...frameImages, ...windowImages, ...innerWindowImages
         ];
 
         loadingScreen.style.display = 'flex';
 
         Promise.all(imageSources.map(loadImage)).then(() => {
-            background = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg.png'];
-            backgroundStars = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bg_stars.png'];
-            floor = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/floor.png'];
+            background = imageCache['assets/bg_table.png'];
+            backgroundWall = imageCache['assets/bg_wall.png'];
             loadingScreen.style.display = 'none';
             init();
             gameLoop();
@@ -195,8 +205,8 @@
             width = window.innerWidth;
             height = window.innerHeight;
             scale = Math.min(width / 400, height / 600);
-            gameCanvas.width = 400 * scale;
-            gameCanvas.height = 600 * scale;
+            canvas.width = 400 * scale;
+            canvas.height = 600 * scale;
             ctx.scale(scale, scale);
         }
 
@@ -208,8 +218,8 @@
                 this.gravity = 0.25;
                 this.lift = -5;
                 this.size = 45;
-                this.image1 = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird1.png'];
-                this.image2 = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/bird2.png'];
+                this.image1 = imageCache['assets/bird1.png'];
+                this.image2 = imageCache['assets/bird2.png'];
                 this.currentImage = this.image1;
             }
 
@@ -247,8 +257,8 @@
                 this.x = 400;
                 this.width = 50;
                 this.speed = GAME_SPEED;
-                this.topTexture = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png'];
-                this.bottomTexture = imageCache['https://cdn.jsdelivr.net/gh/timememe/o_files@main/wall.png'];
+                this.topTexture = imageCache[`assets/wall${Math.floor(Math.random() * 7) + 1}.png`];
+                this.bottomTexture = imageCache[`assets/cup${Math.floor(Math.random() * 8) + 1}.png`];
             }
 
             update() {
@@ -286,10 +296,79 @@
             }
         }
 
+        class Frame {
+            constructor(x) {
+                this.x = x;
+                this.image = imageCache[frameImages[Math.floor(Math.random() * frameImages.length)]];
+            }
+
+            update() {
+                this.x -= GAME_SPEED * 0.5;
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, 100, FRAME_WIDTH, FRAME_HEIGHT);
+            }
+        }
+
+        class Window {
+            constructor(x) {
+                this.x = x;
+                this.image = imageCache[windowImages[Math.floor(Math.random() * windowImages.length)]];
+                this.innerImage = imageCache[innerWindowImages[Math.floor(Math.random() * innerWindowImages.length)]];
+                this.innerX = 0;
+                this.scale = 1; // Увеличиваем внутреннее изображение на 20%
+            }
+
+            update() {
+                this.x -= GAME_SPEED * 0.5;
+                this.innerX -= GAME_SPEED * INNER_WINDOW_SPEED;
+                if (this.innerX <= -WINDOW_WIDTH) {
+                    this.innerX = 0;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+                ctx.clip();
+                
+                const scaledWidth = WINDOW_WIDTH * this.scale;
+                const scaledHeight = WINDOW_HEIGHT * this.scale;
+                const offsetX = (WINDOW_WIDTH - scaledWidth) / 20;
+                const offsetY = (WINDOW_HEIGHT - scaledHeight) / 20;
+                
+                ctx.drawImage(
+                    this.innerImage, 
+                    this.x + this.innerX + offsetX, 
+                    100 + offsetY, 
+                    scaledWidth, 
+                    scaledHeight
+                );
+                ctx.drawImage(
+                    this.innerImage, 
+                    this.x + this.innerX + WINDOW_WIDTH + offsetX, 
+                    100 + offsetY, 
+                    scaledWidth, 
+                    scaledHeight
+                );
+                ctx.restore();
+
+                ctx.drawImage(this.image, this.x, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
+        }
+
+        let frames = [];
+
         function init() {
             bird = new Bird();
             pipes = [];
-            remainingPipes = PIPES_TO_WIN;
+            frames = [
+                Math.random() < 0.5 ? new Frame(0) : new Window(0),
+                Math.random() < 0.5 ? new Frame(FRAME_WIDTH + FRAME_GAP) : new Window(FRAME_WIDTH + FRAME_GAP)
+            ];
+            remainingPipes = PIPES_TO_WIN; // Инициализация оставшихся труб
             gameStarted = false;
             isGameOver = false;
             tutorial.style.display = 'flex';
@@ -309,9 +388,9 @@
 
                     if (pipe.x + pipe.width < 0) {
                         pipes.splice(index, 1);
-                        remainingPipes--;
+                        remainingPipes--; // Уменьшаем количество оставшихся труб
                         if (remainingPipes <= 0) {
-                            gameWin();
+                            gameWin(); // Вызываем функцию победы
                             return;
                         }
                     }
@@ -326,43 +405,46 @@
                     }
                 });
 
-                bgX -= GAME_SPEED * 0.5;
-                bgStarsX -= GAME_SPEED * 0.75;
-                floorX -= GAME_SPEED;
+                if (frames[frames.length - 1].x <= 400 - FRAME_WIDTH - FRAME_GAP) {
+                    frames.push(Math.random() < 0.5 ? new Frame(400) : new Window(400));
+                }
 
-                // Сброс позиций фона при достижении края
-                if (bgX <= -background.width) bgX = 0;
-                if (bgStarsX <= -backgroundStars.width) bgStarsX = 0;
-                if (floorX <= -floor.width) floorX = 0;
-            }
-        }
+                frames.forEach((frame, index) => {
+                    frame.update();
+                    if (frame.x + FRAME_WIDTH < 0) {
+                        frames.splice(index, 1);
+                    }
+                });
 
-        function drawBackground(image, x, speed) {
-            const aspectRatio = image.width / image.height;
-            const scaledHeight = 600;
-            const scaledWidth = scaledHeight * aspectRatio;
-            
-            let currentX = x;
-            while (currentX < 400) {
-                ctx.drawImage(image, currentX, 0, scaledWidth, scaledHeight);
-                currentX += scaledWidth;
+                bgX -= GAME_SPEED;
+                if (bgX <= -400) {
+                    bgX = 0;
+                }
+
+                bgWallX -= GAME_SPEED * 0.5;
+                if (bgWallX <= -400) {
+                    bgWallX = 0;
+                }
             }
-            ctx.drawImage(image, x - scaledWidth, 0, scaledWidth, scaledHeight);
         }
 
         function draw() {
-            if (!background || !backgroundStars || !floor) return;
+            if (!background || !backgroundWall) return;
 
-            drawBackground(background, bgX, GAME_SPEED * 0.5);
-            drawBackground(backgroundStars, bgStarsX, GAME_SPEED * 0.75);
+            ctx.drawImage(backgroundWall, bgWallX, 0, 400, 600);
+            ctx.drawImage(backgroundWall, bgWallX + 400, 0, 400, 600);
+
+            frames.forEach(frame => frame.draw());
+
+            ctx.drawImage(background, bgX, 0, 400, 600);
+            ctx.drawImage(background, bgX + 400, 0, 400, 600);
+
             pipes.forEach(pipe => pipe.draw());
-            drawBackground(floor, floorX, GAME_SPEED);
             bird.draw();
 
-            ctx.fillStyle = 'white';
-            ctx.font = '20px PlutoOreo';
-            ctx.textAlign = 'center';
-            ctx.fillText(`До финиша: ${remainingPipes}`, 200, 30);
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Осталось труб: ${remainingPipes}`, 10, 30);
         }
 
         function gameLoop() {
@@ -387,33 +469,6 @@
             }
         }
 
-        function sendGameResult(game, result) {
-            console.log('Sending result:', game, result);  // Добавлено для отладки
-
-            const data = {
-                game: game,
-                result: result
-            };
-
-            fetch('https://wo-server-v1.onrender.com/game-result', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => console.log('Game result sent:', data))
-            .catch(error => console.error('Error sending game result:', error));
-        }
-
         function gameOver() {
             gameStarted = false;
             isGameOver = true;
@@ -421,37 +476,31 @@
                 bestScore = PIPES_TO_WIN - remainingPipes;
             }
             showGameOverPopup();
-            sendGameResult('game2', 'loss');
         }
 
         function gameWin() {
             gameStarted = false;
             isGameOver = true;
             showGameWinPopup();
-            sendGameResult('game2', 'win');
         }
 
         function showGameOverPopup() {
-            currentScoreElement.textContent = `Пройдено препятствий: ${PIPES_TO_WIN - remainingPipes}`;
-            bestScoreElement.textContent = `Лучший результат: ${bestScore} препятствий`;
+            currentScoreElement.textContent = `Пройдено труб: ${PIPES_TO_WIN - remainingPipes}`;
+            bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
             gameOverPopup.classList.remove('hidden');
-            gameCanvas.classList.add('blur');
-            restartButton.style.display = 'block';
-            exitButton.style.display = 'none';
+            canvas.classList.add('blur');
         }
 
         function showGameWinPopup() {
-            currentScoreElement.textContent = `Поздравляем! Вы прошли все ${PIPES_TO_WIN} препятствий!`;
-            //bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
+            currentScoreElement.textContent = `Поздравляем! Вы прошли все ${PIPES_TO_WIN} труб!`;
+            bestScoreElement.textContent = `Лучший результат: ${bestScore} труб`;
             gameOverPopup.classList.remove('hidden');
-            gameCanvas.classList.add('blur');
-            restartButton.style.display = 'none';
-            exitButton.style.display = 'block';
+            canvas.classList.add('blur');
         }
 
         function hideGameOverPopup() {
             gameOverPopup.classList.add('hidden');
-            gameCanvas.classList.remove('blur');
+            canvas.classList.remove('blur');
         }
 
         function restartGame() {
@@ -462,107 +511,17 @@
             tutorial.style.display = 'none';
             gameLoop();
         }
-        
-        function getCookie(name) {
-          let namePattern = name + "=";
-          let cookiesArray = document.cookie.split(';');
-          for(let i = 0; i < cookiesArray.length; i++) {
-              let cookie = cookiesArray[i].trim();
-              if (cookie.indexOf(namePattern) == 0) {
-                  return cookie.substring(namePattern.length, cookie.length);
-              }
-          }
-          return null;
-        }
-        function setCookie(name, value, days) {
-            var expires = "";
-            if (days) {
-                var date = new Date();
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                expires = "; expires=" + date.toUTCString();
-            }
-            document.cookie = name + "=" + (value || "") + expires + "; path=/";
-        }
-        function awardPoints(points) {
-            const data = {
-                points: points,
-                won: true,
-                game: 'fly'
-            };
-            const token = getCookie('jwt_token');
-            if (token) {
-              fetch('https://api.oreo-promo.com/game', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'x-jwt-auth': token,
-                  },
-                  body: JSON.stringify(data)
-              })
-              .then(response => response.json())
-              .then(result => {
-                  console.log('Points awarded successfully:', result);
-                  window.location="/profile";
-              })
-              .catch(error => {
-                  console.error('Error awarding points:', error);
-                  window.location="/profile";
-              });
-            } else {
-              setCookie('guest_game', JSON.stringify(data), 90);
-              window.location="#ModalLogin";
-            }
-        }
 
         function exitGame() {
-            awardPoints(100);
+            console.log('Exit button clicked');
         }
-
-        // Добавьте эту функцию в начало вашего скрипта
-        function preventDefaultForScrollKeys(e) {
-            if (gameStarted && [32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-                e.preventDefault();
-                return false;
-            }
-        }
-
-        // Добавьте эти слушатели событий в конец вашего скрипта, после остальных слушателей
-        window.addEventListener('keydown', (e) => {
-            if (gameStarted) {
-                preventDefaultForScrollKeys(e);
-            }
-            if (e.key === ' ' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                handleInput();
-            }
-        });
-
-        // Отключаем прокрутку колесиком мыши
-        window.addEventListener('wheel', (e) => {
-            if (gameStarted) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Отключаем прокрутку на мобильных устройствах
-        window.addEventListener('touchmove', (e) => {
-            if (gameStarted) {
-                e.preventDefault();
-            }
-        }, { passive: false });
 
         restartButton.addEventListener('click', restartGame);
         exitButton.addEventListener('click', exitGame);
 
         window.addEventListener('resize', resize);
-        window.addEventListener('keydown', (e) => {
-            if (e.key === ' ' || e.key === 'ArrowUp') {
-                e.preventDefault(); // Предотвращаем действие по умолчанию для пробела и стрелки вверх
-                handleInput();
-            }
-        });
+        window.addEventListener('keydown', handleInput);
         window.addEventListener('touchstart', handleInput);
-        gameCanvas.addEventListener('mousedown', handleInput);
 
         resize();
     </script>
